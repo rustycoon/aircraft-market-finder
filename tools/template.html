@@ -32,6 +32,14 @@ header .sub{color:var(--muted);font-size:13px}
 .picker .hits button{font:inherit;font-size:13px;padding:5px 10px;border:1px solid var(--rule);background:var(--card);color:var(--ink);border-radius:999px;cursor:pointer}
 .picker .hits button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .picker .miss{font-size:13px;color:var(--muted);margin-top:6px}
+.runbox{margin-top:10px}
+.runrow{display:flex;gap:6px;flex-wrap:wrap}
+.runrow input{width:110px;font:inherit;padding:8px 10px;border:1px solid var(--rule);background:var(--card);color:var(--ink);border-radius:6px}
+.runrow button{font:inherit;font-weight:700;padding:8px 14px;border:1px solid var(--accent);background:var(--accent);color:var(--bg);border-radius:6px;cursor:pointer}
+.rmsg{font-size:13px;color:var(--muted);margin-top:6px;min-height:1em}
+.rreq{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;padding:4px 0;border-bottom:1px solid var(--rule);flex-wrap:wrap}
+.rreq button{font:inherit;font-size:12px;padding:3px 9px;border:1px solid var(--rule);background:var(--card);color:var(--ink);border-radius:999px}
+.rreq button:not(:disabled){cursor:pointer;border-color:var(--good);color:var(--good)}
 .changes{background:var(--card);border:1px solid var(--rule);border-left:4px solid var(--accent);border-radius:8px;padding:10px 12px;margin:14px 0;font-size:14px}
 .changes b{display:block;margin-bottom:4px}
 .changes ul{margin:4px 0 0;padding-left:18px}
@@ -49,6 +57,7 @@ h3{font-size:15px;margin:18px 0 6px;color:var(--muted);text-transform:uppercase;
 .tile .v{font-size:22px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
 .tile .v.big{color:var(--accent)}
 .note{font-size:13px;color:var(--muted);margin:6px 0}
+.changes.draft{border-color:var(--warn,#b7791f)}
 .sorts{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
 .sorts button{font:inherit;font-size:13px;padding:5px 10px;border:1px solid var(--rule);background:var(--card);color:var(--ink);border-radius:999px;cursor:pointer}
 .sorts button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
@@ -221,6 +230,7 @@ footer ul{padding-left:18px;margin:6px 0}
     document.getElementById('h-type').textContent = T.name;
     document.getElementById('h-run').textContent = 'Latest run ' + T.run_date + ' · ' + T.listings.length + ' listings found across ' + T.sources_ok.length + ' sources · ' + T.runs + (T.runs===1?' run':' runs') + ' on record';
     main.replaceChildren(changesBox(T));
+    if(T.draft) main.prepend($('div',{class:'changes draft'},'<b>Draft type setup.</b>The mini set up this type on its own from a web-page request. Models counted, groups and factory engines are not yet checked by Rusty — treat the numbers as a first look.'+(T.draft_note?'<br>'+esc(T.draft_note):'')));
     T.groups.forEach(g=>main.appendChild(section(g.label, T.listings.filter(r=>r.group===g.id), g.note, g.id)));
     try{ history.replaceState(null,'','#'+T.id) }catch(e){}
     document.querySelectorAll('.picker .hits button').forEach(b=>b.classList.toggle('on',+b.dataset.i===i));
@@ -231,7 +241,7 @@ footer ul{padding-left:18px;margin:6px 0}
       + '<b>Sources that failed:</b><ul>'+T.sources_fail.map(s=>'<li>'+esc(s)+'</li>').join('')+'</ul>';
   }
 
-  // Type search: filters the types that have been run. A static page cannot start a search itself.
+  // Type search: filters the types that have been run. New types start from the Run box below.
   const pk = document.getElementById('picker');
   pk.innerHTML = '<label for="tq">Aircraft type</label><input id="tq" type="search" placeholder="Type a make or model, e.g. Pacer" autocomplete="off"><div class="hits"></div><div class="miss" hidden></div>';
   const q = pk.querySelector('input'), hits = pk.querySelector('.hits'), miss = pk.querySelector('.miss');
@@ -241,10 +251,56 @@ footer ul{padding-left:18px;margin:6px 0}
     ALL.types.forEach((t,i)=>{ if(!v || (t.name+' '+t.id+' '+t.groups.map(g=>g.label).join(' ')).toLowerCase().includes(v)){
       const b=$('button',{type:'button','data-i':i},esc(t.name)); b.onclick=()=>show(i); hits.appendChild(b); n++; }});
     miss.hidden = n>0;
-    miss.textContent = n ? '' : '“'+q.value.trim()+'” is not tracked yet. New types are added by a search run, then appear here.';
+    miss.textContent = n ? '' : '“'+q.value.trim()+'” is not tracked yet. Enter the PIN and press Run search to start one.';
     hits.querySelectorAll('button').forEach(b=>b.classList.toggle('on',CUR&&ALL.types[+b.dataset.i]===CUR));
   }
   q.addEventListener('input', filter);
+
+  // Run box: starts a search run for the typed type (PIN needed). Works only on the published site.
+  const run = $('div',{class:'runbox'},
+    '<div class="runrow"><input id="rpin" type="password" inputmode="numeric" autocomplete="off" placeholder="PIN" aria-label="PIN">'+
+    '<button type="button" id="rgo">Run search</button></div><div class="rmsg" role="status"></div><div class="rlist"></div>');
+  pk.appendChild(run);
+  const rmsg = run.querySelector('.rmsg'), rlist = run.querySelector('.rlist');
+  const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,50);
+  async function statusOf(r){
+    let st = null;
+    try{ const x = await fetch('status/'+r.slug+'.json',{cache:'no-store'}); if(x.ok) st = await x.json(); }catch(e){}
+    const tid = st && st.type_id;
+    const T = ALL.types.find(t=>t.id===(tid||r.slug));
+    if(st && st.status==='done' && T) return {txt:'Done — open', i:ALL.types.indexOf(T)};
+    if(st && st.status==='failed') return {txt:'Failed: '+(st.message||'see run log')};
+    if(st && st.status==='running') return {txt:'Running — started '+(st.at||'').slice(11,16)+' UTC'};
+    if(T && T.run_date>=r.at.slice(0,10)) return {txt:'Done — open', i:ALL.types.indexOf(T)};
+    return {txt:'Started — waiting for the mini'};
+  }
+  async function loadRequests(){
+    let j = null;
+    if(location.protocol!=='file:') try{ const x = await fetch('api/requests',{cache:'no-store'}); if(x.ok) j = await x.json(); }catch(e){}
+    if(!j){ run.querySelector('.runrow').hidden = true; rmsg.textContent = 'The Run button works on the published page only.'; return; }
+    if(!j.ready){ rmsg.textContent = 'The Run button is not set up yet.'; }
+    rlist.replaceChildren();
+    for(const r of j.requests.slice(0,8)){
+      const s = await statusOf(r);
+      const row = $('div',{class:'rreq'},`<span>${esc(r.type)} · ${esc(r.at.slice(0,16).replace('T',' '))} UTC</span>`);
+      const b = $('button',{type:'button'},esc(s.txt)); b.disabled = s.i==null; if(s.i!=null) b.onclick=()=>show(s.i);
+      row.appendChild(b); rlist.appendChild(row);
+    }
+  }
+  run.querySelector('#rgo').onclick = async ()=>{
+    const type = q.value.trim(), pin = run.querySelector('#rpin').value.trim();
+    if(!type){ rmsg.textContent = 'Type the aircraft first.'; q.focus(); return; }
+    if(!pin){ rmsg.textContent = 'Enter the PIN.'; return; }
+    rmsg.textContent = 'Starting…';
+    try{
+      const x = await fetch('api/run',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({type,pin})});
+      const j = await x.json().catch(()=>({error:'No answer from the server.'}));
+      rmsg.textContent = j.ok ? `Run started for ${type}. The mini is searching now; a full run takes an hour or more. This list updates when it finishes.` : (j.error||'Could not start.');
+      if(j.ok){ run.querySelector('#rpin').value=''; loadRequests(); }
+    }catch(e){ rmsg.textContent = 'The Run button works on the published page only.'; }
+  };
+  loadRequests();
+
   const start = Math.max(0, ALL.types.findIndex(t=>'#'+t.id===location.hash));
   filter(); show(start);
 })();

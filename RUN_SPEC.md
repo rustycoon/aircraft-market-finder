@@ -3,13 +3,20 @@
 Version 1 — 2026-10-28. Built from the Skywagon daily sweeps and the first Pacer run.
 
 ## What one run does
-1. Read the type profile (profiles/<type>.json). If the type is new, write the profile first and get Rusty's OK on it before searching.
+1. Read the type profile (profiles/<type>.json). If the type is new, write the profile first and get Rusty's OK on it before searching. Exception: a run started from the web page Run button (see below) does not wait for the OK.
 2. Search every source below for that type only. Two search words minimum per site.
 3. Clean the data (rules below). One aircraft = one row.
 4. Sort each listing: counted (complete airworthy) or shown-not-counted (with the reason).
 5. Registry pull and damage screen on every tail or serial.
 6. Write data/<type>/<YYYY-MM-DD>.json and a plain run log.
-7. Build the page (tools/build.py), check it (test/check.py — broken copy first, must FAIL; real copy must PASS), then publish.
+7. Build the page (tools/build.py), check it (python3 tools/check_type.py . <type id> — it breaks a copy first, which must FAIL; the real page must PASS; exit 0 only then), then publish.
+
+## Runs started from the web page (Run button)
+- The page sends the typed name, a request id and a slug. The Run button is PIN-protected; the PIN is a Cloudflare secret.
+- Match the typed name to an existing profile first (e.g. "tri pacer" → pacer). Only make a new profile if none fits.
+- A new profile made this way gets "draft": true and a one-line "draft_note" saying what is uncertain. The page shows a Draft banner until Rusty checks it and removes the flag.
+- Status for the page: write status/<slug>.json — {"status":"running"|"done"|"failed","at":ISO time,"type_id":profile id,"message":short plain text}. Push "running" first, then "done" or "failed" at the end.
+- If the typed name is not a real aircraft type, or is too broad ("Cessna"), write "failed" with a short reason and stop.
 
 ## New type profile
 - id, name, groups (each group has its own count, median and average — e.g. Pacer vs Tri-Pacer).

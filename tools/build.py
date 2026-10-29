@@ -78,7 +78,8 @@ def build_type(prof, runs):
         trend.append(t)
     return {'id': prof['id'], 'name': prof['name'], 'groups': prof['groups'], 'run_date': latest['run_date'],
             'runs': len(runs), 'sources_ok': latest['sources_ok'], 'sources_fail': latest['sources_fail'],
-            'listings': rows, 'changes': changes, 'trend': trend}
+            'listings': rows, 'changes': changes, 'trend': trend,
+            'draft': bool(prof.get('draft')), 'draft_note': prof.get('draft_note', '')}
 
 
 def main():
