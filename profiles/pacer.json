@@ -1,0 +1,111 @@
+{
+ "id": "pacer",
+ "name": "Piper Pacer",
+ "groups": [
+  {
+   "id": "pacer",
+   "label": "Pacer — PA-20 and PA-22/20 tailwheel",
+   "models": [
+    "PA-20",
+    "PA-22/20"
+   ]
+  },
+  {
+   "id": "tripacer",
+   "label": "Tri-Pacer — PA-22 nosewheel",
+   "models": [
+    "PA-22"
+   ],
+   "note": "Shown as its own market. Not part of the Pacer numbers."
+  }
+ ],
+ "exclude": [
+  "PA-22-108 Colt (1961–1963, two seats)",
+  "PA-12 replicas and other types matched on the word 'Pacer'"
+ ],
+ "factory_engines": [
+  {
+   "model": "PA-20 \"115\"",
+   "engine": "Lycoming O-235-C1",
+   "hp": 115,
+   "source": "TCDS 1A4 (via NZ CAA type acceptance report; one page prints 108 hp)"
+  },
+  {
+   "model": "PA-20 (125)",
+   "engine": "Lycoming O-290-D",
+   "hp": 125,
+   "source": "TCDS 1A4"
+  },
+  {
+   "model": "PA-20 \"135\"",
+   "engine": "Lycoming O-290-D2",
+   "hp": 135,
+   "source": "TCDS 1A4"
+  },
+  {
+   "model": "PA-22 (125)",
+   "engine": "Lycoming O-290-D",
+   "hp": 125,
+   "source": "TCDS 1A6 rev 34"
+  },
+  {
+   "model": "PA-22-135",
+   "engine": "Lycoming O-290-D2",
+   "hp": 135,
+   "source": "TCDS 1A6 rev 34"
+  },
+  {
+   "model": "PA-22-150",
+   "engine": "Lycoming O-320-A2A/A2B",
+   "hp": 150,
+   "source": "TCDS 1A6 rev 34"
+  },
+  {
+   "model": "PA-22-160",
+   "engine": "Lycoming O-320-B2A/B2B",
+   "hp": 160,
+   "source": "TCDS 1A6 rev 34"
+  }
+ ],
+ "search": {
+  "words": [
+   "piper pacer",
+   "pa-20",
+   "pa-22/20",
+   "tri pacer",
+   "pa-22"
+  ],
+  "trade_a_plane": [
+   "model=PACER",
+   "model=PA-20",
+   "model=TRI-PACER",
+   "model=TRI-PACER PA-22",
+   "model=TRI-PACER PA-22-150",
+   "model=PA 22"
+  ],
+  "controller": [
+   "/listings/for-sale/piper/pacer/aircraft",
+   "/listings/for-sale/piper/tri-pacer/aircraft"
+  ],
+  "barnstormers": [
+   "category-21197-Piper--PA-20-Pacer",
+   "category-21229-Piper--Pacer",
+   "category-21199-Piper--PA-22-Tri-Pacer",
+   "category-21256-Piper--Tri-Pacer"
+  ],
+  "globalplanesearch": [
+   "/aircraft-for-sale/piper/pacer",
+   "/aircraft-for-sale/piper/tri-pacer"
+  ],
+  "aerogurus": [
+   "/models/piper-pacer",
+   "/models/piper-tri-pacer"
+  ],
+  "craigslist_query": "pacer|tripacer|tri-pacer|pa22|pa-22|pa20|pa-20",
+  "extra": [
+   "Short Wing Piper Club classifieds (shortwingpipers.org)",
+   "Plane Sales Australia"
+  ]
+ },
+ "stale_days": 60
+}

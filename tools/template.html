@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aircraft Market Finder</title>
+<style>
+:root{
+  --bg:#f4f2ed; --card:#ffffff; --ink:#1b2430; --muted:#5b6573; --rule:#d9d4c8;
+  --accent:#8a3b12; --good:#1f6b3a; --warn:#9a5b00; --bad:#a3262a; --chip:#efebe2;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#12161c; --card:#1a2028; --ink:#e7e9ec; --muted:#9aa4b2; --rule:#2c3440;
+    --accent:#f0a36b; --good:#7fd19b; --warn:#f2c46b; --bad:#f08a8d; --chip:#232b35;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12161c; --card:#1a2028; --ink:#e7e9ec; --muted:#9aa4b2; --rule:#2c3440;
+  --accent:#f0a36b; --good:#7fd19b; --warn:#f2c46b; --bad:#f08a8d; --chip:#232b35;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:20px 16px 48px}
+header h1{font-size:26px;margin:0 0 2px;letter-spacing:-.3px}
+header .sub{color:var(--muted);font-size:13px}
+.asks{display:inline-block;margin-top:8px;padding:3px 8px;border:1px solid var(--accent);color:var(--accent);border-radius:4px;font-size:12px;font-weight:700;letter-spacing:.4px}
+.picker{margin:14px 0 4px}
+.picker label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px}
+.picker input{font:inherit;padding:8px 10px;border:1px solid var(--rule);background:var(--card);color:var(--ink);border-radius:6px;width:100%;max-width:360px}
+.picker .hits{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.picker .hits button{font:inherit;font-size:13px;padding:5px 10px;border:1px solid var(--rule);background:var(--card);color:var(--ink);border-radius:999px;cursor:pointer}
+.picker .hits button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.picker .miss{font-size:13px;color:var(--muted);margin-top:6px}
+.changes{background:var(--card);border:1px solid var(--rule);border-left:4px solid var(--accent);border-radius:8px;padding:10px 12px;margin:14px 0;font-size:14px}
+.changes b{display:block;margin-bottom:4px}
+.changes ul{margin:4px 0 0;padding-left:18px}
+table.trend{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums;margin:6px 0}
+table.trend th,table.trend td{text-align:right;padding:4px 6px;border-bottom:1px solid var(--rule)}
+table.trend th:first-child,table.trend td:first-child{text-align:left}
+.chip.new{color:var(--good);border-color:var(--good)}
+.chip.down{color:var(--good);border-color:var(--good)}
+.chip.up{color:var(--bad);border-color:var(--bad)}
+h2{font-size:19px;margin:28px 0 8px;padding-bottom:6px;border-bottom:2px solid var(--ink)}
+h3{font-size:15px;margin:18px 0 6px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:10px 0}
+.tile{background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:10px 12px}
+.tile .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.tile .v{font-size:22px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+.tile .v.big{color:var(--accent)}
+.note{font-size:13px;color:var(--muted);margin:6px 0}
+.sorts{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.sorts button{font:inherit;font-size:13px;padding:5px 10px;border:1px solid var(--rule);background:var(--card);color:var(--ink);border-radius:999px;cursor:pointer}
+.sorts button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.row{background:var(--card);border:1px solid var(--rule);border-radius:8px;margin:8px 0;overflow:hidden}
+.row summary{list-style:none;cursor:pointer;padding:10px 12px;display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:baseline}
+.row summary::-webkit-details-marker{display:none}
+.title{font-weight:700}
+.price{font-weight:700;font-size:17px;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.price.none{color:var(--muted);font-weight:400;font-size:14px}
+.meta{grid-column:1/-1;color:var(--muted);font-size:13px;display:flex;flex-wrap:wrap;gap:4px 12px}
+.chips{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:4px}
+.chip{font-size:11px;padding:2px 7px;border-radius:999px;background:var(--chip);border:1px solid var(--rule)}
+.chip.exp{color:var(--warn);border-color:var(--warn)}
+.chip.dmg{color:var(--bad);border-color:var(--bad)}
+.chip.clean{color:var(--good);border-color:var(--good)}
+.chip.foreign{color:var(--accent);border-color:var(--accent)}
+.chip.why{color:var(--bad);border-color:var(--bad)}
+.body{padding:0 12px 12px;border-top:1px solid var(--rule);font-size:14px}
+.body dl{display:grid;grid-template-columns:110px 1fr;gap:4px 10px;margin:10px 0}
+.body dt{color:var(--muted)}
+.body dd{margin:0;overflow-wrap:anywhere}
+.body a{color:var(--accent)}
+.empty{color:var(--muted);font-style:italic}
+footer{margin-top:36px;font-size:12px;color:var(--muted);border-top:1px solid var(--rule);padding-top:10px}
+footer ul{padding-left:18px;margin:6px 0}
+@media (max-width:520px){.body dl{grid-template-columns:1fr}.body dt{margin-top:6px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="sub" style="text-transform:uppercase;letter-spacing:.8px;font-weight:700">Aircraft Market Finder</div>
+    <h1 id="h-type">Aircraft Market Finder</h1>
+    <div class="sub" id="h-run"></div>
+    <div class="asks">ASKING PRICES, NOT SALES</div>
+    <div class="picker" id="picker"></div>
+  </header>
+  <main id="main"></main>
+  <footer id="foot"></footer>
+</div>
+<script id="data" type="application/json">__DATA__</script>
+<script>
+(function(){
+  const ALL = JSON.parse(document.getElementById('data').textContent);
+  const FLAG = {US:'🇺🇸',CA:'🇨🇦',AU:'🇦🇺',GB:'🇬🇧',NZ:'🇳🇿',ZA:'🇿🇦'};
+  const $ = (t,a={},h='')=>{const e=document.createElement(t);for(const k in a)e.setAttribute(k,a[k]);if(h)e.innerHTML=h;return e};
+  const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const money = n => '$'+Math.round(n).toLocaleString('en-US');
+  const num = n => (n==null||n==='')?'?':Number(n).toLocaleString('en-US');
+
+  // The one rule for "complete airworthy": has a price, and is not a project, salvage, parts, share or pending.
+  const counted = r => !!r.ask && !r.kind;
+  function stats(rows){
+    const a = rows.filter(counted).map(r=>r.ask).sort((x,y)=>x-y);
+    if(!a.length) return {n:0};
+    const m = a.length%2 ? a[(a.length-1)/2] : (a[a.length/2-1]+a[a.length/2])/2;
+    const avg = a.reduce((s,x)=>s+x,0)/a.length;
+    const c = rows.filter(counted);
+    return {n:a.length, median:m, mean:avg, lo:a[0], hi:a[a.length-1],
+      us:c.filter(r=>r.country==='US').length, ca:c.filter(r=>r.country==='CA').length,
+      other:c.filter(r=>r.country!=='US'&&r.country!=='CA').length};
+  }
+
+  function tiles(rows){
+    const s = stats(rows), box = $('div',{class:'tiles'});
+    const t = (k,v,big)=>box.appendChild($('div',{class:'tile'},`<div class="k">${k}</div><div class="v${big?' big':''}">${v}</div>`));
+    t('Listings found', rows.length);
+    t('Complete airworthy', s.n);
+    t('Median ask', s.n?money(s.median):'—', true);
+    t('Average ask', s.n?money(s.mean):'—', true);
+    t('Range', s.n?money(s.lo)+' – '+money(s.hi):'—');
+    t('US / Canada / other', s.n?`${s.us} / ${s.ca} / ${s.other}`:'—');
+    return box;
+  }
+
+  function damageChip(r){
+    const d = r.damage||'';
+    if(/^NTSB [A-Z0-9]+/.test(d)) return '<span class="chip dmg">NTSB record</span>';
+    if(/^No NTSB record/.test(d)) return '<span class="chip clean">No NTSB record</span>';
+    return '<span class="chip">Not screened</span>';
+  }
+
+  function card(r){
+    const d = $('details',{class:'row','data-key':(r.tail||'')+'|'+(r.loc||'')});
+    const flag = FLAG[r.country]||'';
+    const foreign = (r.country!=='US'&&r.country!=='CA') ? ' <span class="chip foreign">foreign</span>' : '';
+    const price = r.ask ? `<div class="price">${money(r.ask)}</div>` : `<div class="price none">No price</div>`;
+    const chips = [];
+    if(r.experimental) chips.push('<span class="chip exp">Experimental</span>');
+    if(r.native) chips.push(`<span class="chip">${esc(r.native)}</span>`);
+    chips.push(damageChip(r));
+    const ph = r.price_history||[];
+    if(CUR && CUR.changes && CUR.changes.new.includes(r.id)) chips.push('<span class="chip new">New since '+esc(CUR.changes.since)+'</span>');
+    if(ph.length>1){const a=ph[ph.length-2].ask,b=ph[ph.length-1].ask; if(a&&b) chips.push(b<a?`<span class="chip down">Down ${money(a-b)}</span>`:`<span class="chip up">Up ${money(b-a)}</span>`);}
+    if(r.days_listed!=null && CUR && CUR.runs>1) chips.push(`<span class="chip">Tracked ${r.days_listed} days</span>`);
+    if(!counted(r)) chips.push(`<span class="chip why">Not counted: ${esc(r.kind||(r.ask?'':'no price'))}</span>`);
+    d.innerHTML = `<summary>
+      <div class="title">${flag} ${esc(r.year||'?')} ${esc(r.model)} ${r.tail?'· '+esc(r.tail):''}${foreign}</div>${price}
+      <div class="meta"><span>${esc(r.loc)}</span><span>TT ${num(r.tt)}</span><span>SMOH ${num(r.smoh)}</span><span>${esc(r.engine||'engine ?')}</span></div>
+      <div class="chips">${chips.join('')}</div></summary>`;
+    const links = [`<a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.src)}</a>`];
+    if(r.url2) links.push(`<a href="${esc(r.url2)}" target="_blank" rel="noopener">second source</a>`);
+    const rows = [
+      ['Ad says', r.notes], ['Engine time', r.smoh_note], ['Price note', r.price_note], ['Currency', r.fx],
+      ['Serial', r.serial], ['Tail note', r.tail_note], ['Registry', r.registry], ['Damage', r.damage],
+      ['First seen', r.first_seen], ['Price history', ph.map(p=>p.date+' '+(p.ask?money(p.ask):'no price')).join('  →  ')],
+      ['Source', links.join(' · ')]
+    ].filter(x=>x[1]);
+    d.appendChild($('div',{class:'body'},'<dl>'+rows.map(([k,v])=>`<dt>${k}</dt><dd>${k==='Source'?v:esc(v)}</dd>`).join('')+'</dl>'));
+    d.dataset.ask = r.ask||0; d.dataset.year = r.year||0; d.dataset.tt = r.tt||0; d.dataset.smoh = r.smoh==null?99999:r.smoh;
+    d.dataset.counted = counted(r)?1:0;
+    return d;
+  }
+
+  function list(rows, holder){
+    const sorts = $('div',{class:'sorts'});
+    const keys = [['ask','Price ↑'],['askd','Price ↓'],['year','Year'],['tt','Total time'],['smoh','Engine time']];
+    const box = $('div');
+    function render(k){
+      sorts.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.k===k));
+      const cards = rows.map(card);
+      cards.sort((a,b)=>{
+        if(a.dataset.counted!==b.dataset.counted) return b.dataset.counted-a.dataset.counted;
+        const f = k==='askd'?'ask':k, s = k==='askd'?-1:1;
+        return s*(Number(a.dataset[f])-Number(b.dataset[f]));
+      });
+      box.replaceChildren(...cards);
+    }
+    keys.forEach(([k,l])=>{const b=$('button',{type:'button','data-k':k},l);b.onclick=()=>render(k);sorts.appendChild(b)});
+    holder.appendChild(sorts); holder.appendChild(box); render('ask');
+  }
+
+  function trendTable(gid){
+    const runs = CUR.trend;
+    if(runs.length<2) return $('p',{class:'note'},'Price history starts '+esc(runs[0].date)+'. The trend fills in as runs are added.');
+    const t = $('table',{class:'trend'});
+    t.innerHTML = '<tr><th>Run</th><th>Counted</th><th>Median</th><th>Average</th></tr>' +
+      runs.slice().reverse().map(r=>{const s=r[gid]||{n:0};return `<tr><td>${esc(r.date)}</td><td>${s.n}</td><td>${s.n?money(s.median):'—'}</td><td>${s.n?money(s.mean):'—'}</td></tr>`}).join('');
+    return t;
+  }
+
+  function section(title, rows, note, gid){
+    const s = $('section',{'data-group':gid});
+    s.appendChild($('h2',{},esc(title)));
+    s.appendChild(tiles(rows));
+    if(note) s.appendChild($('p',{class:'note'},note));
+    s.appendChild($('h3',{},'Market over time'));
+    s.appendChild(trendTable(gid));
+    s.appendChild($('h3',{},'Listings'));
+    if(rows.length) list(rows, s); else s.appendChild($('p',{class:'empty'},'No listings.'));
+    return s;
+  }
+
+  function changesBox(T){
+    if(!T.changes) return $('div',{class:'changes'},'<b>First run.</b>Changes since the last run will show here from the next run on.');
+    const C = T.changes, byId = Object.fromEntries(T.listings.map(r=>[r.id,r]));
+    const nm = r => esc([r.year||'?', r.model, r.tail, r.loc].filter(Boolean).join(' · '));
+    const li = [];
+    C.new.forEach(id=>{const r=byId[id]; if(r) li.push(`<li>New: ${nm(r)} — ${r.ask?money(r.ask):'no price'}</li>`)});
+    C.moves.forEach(m=>{const r=byId[m.id]; if(r) li.push(`<li>Price ${m.to<m.from?'down':'up'}: ${nm(r)} — ${m.from?money(m.from):'no price'} → ${m.to?money(m.to):'no price'}</li>`)});
+    C.gone.forEach(r=>li.push(`<li>Gone: ${nm(r)} — last asked ${r.last_ask?money(r.last_ask):'no price'}. Ad not found; not proof of a sale.</li>`));
+    return $('div',{class:'changes'},`<b>Since ${esc(C.since)}</b>`+(li.length?'<ul>'+li.join('')+'</ul>':'No new listings, no price changes, nothing gone.'));
+  }
+
+  let CUR = null;
+  function show(i){
+    const T = ALL.types[i], main = document.getElementById('main');
+    CUR = T;
+    document.title = T.name + ' — Market';
+    document.getElementById('h-type').textContent = T.name;
+    document.getElementById('h-run').textContent = 'Latest run ' + T.run_date + ' · ' + T.listings.length + ' listings found across ' + T.sources_ok.length + ' sources · ' + T.runs + (T.runs===1?' run':' runs') + ' on record';
+    main.replaceChildren(changesBox(T));
+    T.groups.forEach(g=>main.appendChild(section(g.label, T.listings.filter(r=>r.group===g.id), g.note, g.id)));
+    try{ history.replaceState(null,'','#'+T.id) }catch(e){}
+    document.querySelectorAll('.picker .hits button').forEach(b=>b.classList.toggle('on',+b.dataset.i===i));
+    const f = document.getElementById('foot');
+    f.innerHTML = '<b>Counted</b> means complete and airworthy: has a price and is not a project, salvage, parts, share or pending sale. Experimental aircraft count and are marked. Foreign listings count and carry their flag; non-US prices are converted to USD on the run date.'
+      + '<br><b>Damage</b> is an NTSB search by registration. Pre-1982 records are often missing; logbooks are the only full check.'
+      + '<br><b>Sources reached:</b><ul>'+T.sources_ok.map(s=>'<li>'+esc(s)+'</li>').join('')+'</ul>'
+      + '<b>Sources that failed:</b><ul>'+T.sources_fail.map(s=>'<li>'+esc(s)+'</li>').join('')+'</ul>';
+  }
+
+  // Type search: filters the types that have been run. A static page cannot start a search itself.
+  const pk = document.getElementById('picker');
+  pk.innerHTML = '<label for="tq">Aircraft type</label><input id="tq" type="search" placeholder="Type a make or model, e.g. Pacer" autocomplete="off"><div class="hits"></div><div class="miss" hidden></div>';
+  const q = pk.querySelector('input'), hits = pk.querySelector('.hits'), miss = pk.querySelector('.miss');
+  function filter(){
+    const v = q.value.trim().toLowerCase();
+    hits.replaceChildren(); let n = 0;
+    ALL.types.forEach((t,i)=>{ if(!v || (t.name+' '+t.id+' '+t.groups.map(g=>g.label).join(' ')).toLowerCase().includes(v)){
+      const b=$('button',{type:'button','data-i':i},esc(t.name)); b.onclick=()=>show(i); hits.appendChild(b); n++; }});
+    miss.hidden = n>0;
+    miss.textContent = n ? '' : '“'+q.value.trim()+'” is not tracked yet. New types are added by a search run, then appear here.';
+    hits.querySelectorAll('button').forEach(b=>b.classList.toggle('on',CUR&&ALL.types[+b.dataset.i]===CUR));
+  }
+  q.addEventListener('input', filter);
+  const start = Math.max(0, ALL.types.findIndex(t=>'#'+t.id===location.hash));
+  filter(); show(start);
+})();
+</script>
+</body>
+</html>
